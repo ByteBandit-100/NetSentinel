@@ -1,0 +1,19 @@
+
+---
+
+## ⚙ Requirements
+
+- Python 3.10+
+- Windows / Linux
+
+---
+
+## 👨‍💻 Author
+
+Mohit Gautam
+
+---
+
+## 📌 Status
+
+🚧 Under Active Development

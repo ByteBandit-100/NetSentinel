@@ -1,0 +1,29 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+env/
+
+# Logs
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing cache
+.pytest_cache/
+
+# Build files
+dist/
+build/
