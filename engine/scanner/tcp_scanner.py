@@ -1,24 +1,35 @@
 import socket
 import time
-from engine.utils.severity_classifier import SeverityClassifier
+import threading
 from concurrent.futures import ThreadPoolExecutor
+
 from engine.core.logger import LoggerFactory
 from engine.utils.service_mapper import ServiceMapper
+from engine.utils.severity_classifier import SeverityClassifier
+
 from colorama import Fore, Style
-import threading
 
 class TCPScanner:
 
     def __init__(self, target: str, start_port: int, end_port: int, threads: int = 50):
         self.target = target
-        self.lock = threading.Lock()
         self.start_port = start_port
         self.end_port = end_port
         self.threads = threads
-        self.logger = LoggerFactory.get_logger("scanner", "scan_logs")
-        self.open_ports = []
 
+        self.logger = LoggerFactory.get_logger("scanner", "scan_logs")
+
+        self.open_ports = []
+        self.scanned_count = 0
+        self.lock = threading.Lock()
+
+    # -------------------------------------------------------
+    # Vulnerability Pattern Check
+    # -------------------------------------------------------
     def check_vulnerability(self, port: int, banner: str):
+        if not banner:
+            return
+
         banner_lower = banner.lower()
 
         vulnerable_patterns = [
@@ -31,20 +42,23 @@ class TCPScanner:
         for pattern in vulnerable_patterns:
             if pattern in banner_lower:
                 warning_msg = (
-                    f"Potential vulnerable service detected on port {port}: {pattern}"
+                    f"Potential vulnerable service detected "
+                    f"on port {port}: {pattern}"
                 )
-                print(f"  ⚠ {warning_msg}")
+                print(f"{Fore.RED}⚠ {warning_msg}{Style.RESET_ALL}")
                 self.logger.warning(warning_msg)
 
+    # -------------------------------------------------------
+    # Scan Single Port
+    # -------------------------------------------------------
     def scan_port(self, port: int):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.settimeout(1)
+
                 result = sock.connect_ex((self.target, port))
 
                 if result == 0:
-                    self.logger.info(f"Port {port} is OPEN")
-
                     service = ServiceMapper.get_service_name(port)
                     banner_text = None
 
@@ -55,11 +69,12 @@ class TCPScanner:
 
                         if banner:
                             banner_text = banner[:200]
-                            print(f"  └─ Banner: {banner[:100]}")
-                            self.logger.info(f"Port {port} banner: {banner_text}")
+                            self.logger.info(
+                                f"Port {port} banner: {banner_text}"
+                            )
                             self.check_vulnerability(port, banner)
 
-                    except:
+                    except Exception:
                         pass
 
                     severity = SeverityClassifier.classify(port, banner_text)
@@ -70,11 +85,17 @@ class TCPScanner:
                         "low": Fore.GREEN
                     }.get(severity, Fore.GREEN)
 
+                    # Thread-safe update
                     with self.lock:
                         print(
-                            f"{color}[OPEN] Port {port} | "
-                            f"Severity: {severity.upper()}{Style.RESET_ALL}"
+                            f"{color}[OPEN] Port {port} "
+                            f"| Service: {service} "
+                            f"| Severity: {severity.upper()}"
+                            f"{Style.RESET_ALL}"
                         )
+
+                        if banner_text:
+                            print(f"   └─ Banner: {banner_text[:100]}")
 
                         self.open_ports.append({
                             "port": port,
@@ -83,13 +104,25 @@ class TCPScanner:
                             "severity": severity
                         })
 
+                    self.logger.info(f"Port {port} is OPEN")
+
                 else:
                     self.logger.debug(f"Port {port} is closed")
 
         except Exception as e:
             self.logger.error(f"Error scanning port {port}: {str(e)}")
 
+        finally:
+            # Thread-safe progress counter
+            with self.lock:
+                self.scanned_count += 1
+                print(f"Scanned: {self.scanned_count}", end="\r")
+
+    # -------------------------------------------------------
+    # Main Scan Function
+    # -------------------------------------------------------
     def scan(self):
+
         print(f"\nScanning {self.target} with {self.threads} threads...\n")
 
         start_time = time.time()
@@ -109,7 +142,7 @@ class TCPScanner:
         total_ports = self.end_port - self.start_port + 1
         open_count = len(self.open_ports)
 
-        print("\nScan Summary")
+        print("\n\nScan Summary")
         print("------------")
         print(f"Target: {self.target}")
         print(f"Ports scanned: {total_ports}")
@@ -120,5 +153,5 @@ class TCPScanner:
         self.logger.info(
             f"Summary: {open_count} open ports found in {duration} seconds"
         )
-        return self.open_ports
 
+        return self.open_ports
