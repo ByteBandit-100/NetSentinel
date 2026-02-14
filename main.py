@@ -1,7 +1,6 @@
 from config import APP_NAME, VERSION
 from engine.core.logger import LoggerFactory
 
-
 def main():
     logger = LoggerFactory.get_logger("app", "scan_logs")
 
