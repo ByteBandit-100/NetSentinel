@@ -4,6 +4,7 @@
 ## ⚙ Requirements
 
 - Python 3.10+
+colorama
 - Windows / Linux
 
 ---

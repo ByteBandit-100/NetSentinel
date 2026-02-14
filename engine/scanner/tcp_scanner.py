@@ -4,12 +4,14 @@ from engine.utils.severity_classifier import SeverityClassifier
 from concurrent.futures import ThreadPoolExecutor
 from engine.core.logger import LoggerFactory
 from engine.utils.service_mapper import ServiceMapper
-
+from colorama import Fore, Style
+import threading
 
 class TCPScanner:
 
     def __init__(self, target: str, start_port: int, end_port: int, threads: int = 50):
         self.target = target
+        self.lock = threading.Lock()
         self.start_port = start_port
         self.end_port = end_port
         self.threads = threads
@@ -41,10 +43,9 @@ class TCPScanner:
                 result = sock.connect_ex((self.target, port))
 
                 if result == 0:
-                    print(f"[OPEN] Port {port}")
                     self.logger.info(f"Port {port} is OPEN")
-                    service = ServiceMapper.get_service_name(port)
 
+                    service = ServiceMapper.get_service_name(port)
                     banner_text = None
 
                     # Attempt banner grabbing
@@ -63,28 +64,24 @@ class TCPScanner:
 
                     severity = SeverityClassifier.classify(port, banner_text)
 
-                    self.open_ports.append({
-                        "port": port,
-                        "service": service,
-                        "banner": banner_text,
-                        "severity": severity
-                    })
+                    color = {
+                        "high": Fore.RED,
+                        "medium": Fore.YELLOW,
+                        "low": Fore.GREEN
+                    }.get(severity, Fore.GREEN)
 
-                    # Attempt banner grabbing
-                    try:
-                        sock.sendall(b"HEAD / HTTP/1.1\r\n\r\n")
-                        banner = sock.recv(1024).decode(errors="ignore").strip()
+                    with self.lock:
+                        print(
+                            f"{color}[OPEN] Port {port} | "
+                            f"Severity: {severity.upper()}{Style.RESET_ALL}"
+                        )
 
-                        if banner:
-                            print(f"  └─ Banner: {banner[:100]}")
-                            self.logger.info(
-                                f"Port {port} banner: {banner[:200]}"
-                            )
-                            self.check_vulnerability(port, banner)
-
-
-                    except:
-                        pass
+                        self.open_ports.append({
+                            "port": port,
+                            "service": service,
+                            "banner": banner_text,
+                            "severity": severity
+                        })
 
                 else:
                     self.logger.debug(f"Port {port} is closed")

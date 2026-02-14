@@ -7,7 +7,8 @@ from engine.core.validator import InputValidator
 from engine.scanner.tcp_scanner import TCPScanner
 from engine.export.json_exporter import JSONExporter
 from engine.export.html_exporter import HTMLExporter
-
+from colorama import init
+init(autoreset=True)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(

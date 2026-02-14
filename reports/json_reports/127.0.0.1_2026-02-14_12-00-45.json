@@ -1,0 +1,8 @@
+{
+    "target": "127.0.0.1",
+    "start_port": 1,
+    "end_port": 100,
+    "open_ports": [],
+    "total_scanned": 100,
+    "scan_time": 2.06
+}
