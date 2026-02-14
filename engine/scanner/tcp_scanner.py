@@ -1,5 +1,6 @@
 import socket
 import time
+from engine.utils.severity_classifier import SeverityClassifier
 from concurrent.futures import ThreadPoolExecutor
 from engine.core.logger import LoggerFactory
 from engine.utils.service_mapper import ServiceMapper
@@ -60,10 +61,13 @@ class TCPScanner:
                     except:
                         pass
 
+                    severity = SeverityClassifier.classify(port, banner_text)
+
                     self.open_ports.append({
                         "port": port,
                         "service": service,
-                        "banner": banner_text
+                        "banner": banner_text,
+                        "severity": severity
                     })
 
                     # Attempt banner grabbing

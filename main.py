@@ -6,12 +6,17 @@ from engine.core.logger import LoggerFactory
 from engine.core.validator import InputValidator
 from engine.scanner.tcp_scanner import TCPScanner
 from engine.export.json_exporter import JSONExporter
-
+from engine.export.html_exporter import HTMLExporter
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="NetSentinel - Multithreaded TCP Port Scanner"
+    )
+
+    parser.add_argument(
+        "--compare",
+        help="Path to previous JSON report to compare with"
     )
 
     parser.add_argument(
@@ -90,7 +95,29 @@ def main():
             "scan_time": total_time
         }
 
+        if args.compare:
+            from engine.analysis.scan_comparator import ScanComparator
+
+            old_data = ScanComparator.load_previous_scan(args.compare)
+
+            if old_data:
+                comparison = ScanComparator.compare(old_data, report_data)
+
+                print("\n🔍 Comparison Results")
+                print("----------------------")
+                print(f"Newly Opened Ports: {len(comparison['newly_opened'])}")
+                print(f"Closed Ports: {len(comparison['closed_ports'])}")
+                print(f"Severity Changes: {len(comparison['severity_changed'])}")
+
+                logger.info("Scan comparison completed.")
+            else:
+                print("Previous scan file not found.")
+
         report_path = JSONExporter.export(report_data, args.target)
+        html_path = HTMLExporter.export(report_data, args.target)
+
+        print(f"HTML report saved to: {html_path}")
+        logger.info(f"HTML report exported to {html_path}")
 
         print(f"\nReport saved to: {report_path}")
         logger.info(f"Report exported to {report_path}")
