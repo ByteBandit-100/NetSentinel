@@ -1,9 +1,12 @@
 import argparse
 import sys
+import time
 from config import APP_NAME, VERSION
 from engine.core.logger import LoggerFactory
 from engine.core.validator import InputValidator
 from engine.scanner.tcp_scanner import TCPScanner
+from engine.export.json_exporter import JSONExporter
+
 
 
 def parse_arguments():
@@ -67,9 +70,31 @@ def main():
             threads=args.threads
         )
 
-        scanner.scan()
+        start_time = time.time()
+
+        open_ports_list = scanner.scan()  # ✅ capture results
+
+        end_time = time.time()
+        total_time = round(end_time - start_time, 2)
+
+        total_ports = args.end - args.start + 1
 
         logger.info("Scan completed successfully.")
+
+        report_data = {
+            "target": args.target,
+            "start_port": args.start,
+            "end_port": args.end,
+            "open_ports": open_ports_list,
+            "total_scanned": total_ports,
+            "scan_time": total_time
+        }
+
+        report_path = JSONExporter.export(report_data, args.target)
+
+        print(f"\nReport saved to: {report_path}")
+        logger.info(f"Report exported to {report_path}")
+
 
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}")
