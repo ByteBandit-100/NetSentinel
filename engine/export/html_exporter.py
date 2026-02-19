@@ -2,7 +2,6 @@ import os
 from datetime import datetime
 from config import REPORT_BASE_DIR
 
-
 class HTMLExporter:
 
     @staticmethod

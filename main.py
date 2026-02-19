@@ -49,7 +49,6 @@ def parse_arguments():
 
     return parser.parse_args()
 
-
 def main():
     logger = LoggerFactory.get_logger("app", "scan_logs")
 
@@ -128,7 +127,6 @@ def main():
         logger.error(f"Error occurred: {str(e)}")
         print(f"[ERROR] {str(e)}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

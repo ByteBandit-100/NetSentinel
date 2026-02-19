@@ -1,12 +1,10 @@
 import socket
 import time
 import threading
-from concurrent.futures import ThreadPoolExecutor
-
+from engine.scanner.thread_pool import ThreadPoolManager
 from engine.core.logger import LoggerFactory
 from engine.utils.service_mapper import ServiceMapper
 from engine.utils.severity_classifier import SeverityClassifier
-
 from colorama import Fore, Style
 
 class TCPScanner:
@@ -18,7 +16,6 @@ class TCPScanner:
         self.threads = threads
 
         self.logger = LoggerFactory.get_logger("scanner", "scan_logs")
-
         self.open_ports = []
         self.scanned_count = 0
         self.lock = threading.Lock()
@@ -41,10 +38,7 @@ class TCPScanner:
 
         for pattern in vulnerable_patterns:
             if pattern in banner_lower:
-                warning_msg = (
-                    f"Potential vulnerable service detected "
-                    f"on port {port}: {pattern}"
-                )
+                warning_msg = f"Potential vulnerable service detected on port {port}: {pattern}"
                 print(f"{Fore.RED}⚠ {warning_msg}{Style.RESET_ALL}")
                 self.logger.warning(warning_msg)
 
@@ -69,9 +63,7 @@ class TCPScanner:
 
                         if banner:
                             banner_text = banner[:200]
-                            self.logger.info(
-                                f"Port {port} banner: {banner_text}"
-                            )
+                            self.logger.info(f"Port {port} banner: {banner_text}")
                             self.check_vulnerability(port, banner)
 
                     except Exception:
@@ -88,12 +80,8 @@ class TCPScanner:
                     # Thread-safe update
                     with self.lock:
                         print(
-                            f"{color}[OPEN] Port {port} "
-                            f"| Service: {service} "
-                            f"| Severity: {severity.upper()}"
-                            f"{Style.RESET_ALL}"
+                            f"{color}[OPEN] Port {port} | Service: {service} | Severity: {severity.upper()}{Style.RESET_ALL}"
                         )
-
                         if banner_text:
                             print(f"   └─ Banner: {banner_text[:100]}")
 
@@ -122,19 +110,17 @@ class TCPScanner:
     # Main Scan Function
     # -------------------------------------------------------
     def scan(self):
-
         print(f"\nScanning {self.target} with {self.threads} threads...\n")
-
         start_time = time.time()
 
-        self.logger.info(
-            f"Starting threaded scan on {self.target} "
-            f"from {self.start_port} to {self.end_port}"
-        )
+        self.logger.info(f"Starting threaded scan on {self.target} from {self.start_port} to {self.end_port}")
 
-        with ThreadPoolExecutor(max_workers=self.threads) as executor:
-            ports = range(self.start_port, self.end_port + 1)
-            executor.map(self.scan_port, ports)
+        # -----------------------------
+        # Use External ThreadPoolManager
+        # -----------------------------
+        pool = ThreadPoolManager(max_threads=self.threads)
+        ports = range(self.start_port, self.end_port + 1)
+        pool.run(self.scan_port, ports)
 
         end_time = time.time()
         duration = round(end_time - start_time, 2)
@@ -150,8 +136,6 @@ class TCPScanner:
         print(f"Time taken: {duration} seconds\n")
 
         self.logger.info("Scan finished.")
-        self.logger.info(
-            f"Summary: {open_count} open ports found in {duration} seconds"
-        )
+        self.logger.info(f"Summary: {open_count} open ports found in {duration} seconds")
 
         return self.open_ports

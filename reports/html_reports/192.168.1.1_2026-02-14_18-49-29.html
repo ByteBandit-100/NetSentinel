@@ -1,0 +1,81 @@
+
+        <html>
+        <head>
+            <title>NetSentinel Scan Report</title>
+            <style>
+                body {
+                    font-family: Arial;
+                    background-color: #1e1e1e;
+                    color: white;
+                    padding: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                th, td {
+                    border: 1px solid #444;
+                    padding: 10px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #333;
+                }
+            </style>
+        </head>
+        <body>
+
+            <h1>NetSentinel Scan Report</h1>
+
+            <h3>Target: 192.168.1.1</h3>
+            <p>Port Range: 1 - 500</p>
+            <p>Total Scanned: 500</p>
+            <p>Time Taken: 5.17 seconds</p>
+
+            <h2>Open Ports</h2>
+
+            <table>
+                <tr>
+                    <th>Port</th>
+                    <th>Service</th>
+                    <th>Banner</th>
+                    <th>Severity</th>
+                </tr>
+                
+            <tr>
+                <td>80</td>
+                <td>http</td>
+                <td>HTTP/1.0 301 Moved Permanently
+Date: Sat, 14 Feb 2026 13:19:14 GMT
+X-Frame-Options: SAMEORIGIN
+Connection: close
+Content-Type: text/html
+Location: https://(null)/</td>
+                <td style="color:#ffa500; font-weight:bold;">
+                    MEDIUM
+                </td>
+            </tr>
+            
+            <tr>
+                <td>53</td>
+                <td>domain</td>
+                <td>None</td>
+                <td style="color:#4CAF50; font-weight:bold;">
+                    LOW
+                </td>
+            </tr>
+            
+            <tr>
+                <td>443</td>
+                <td>https</td>
+                <td>None</td>
+                <td style="color:#4CAF50; font-weight:bold;">
+                    LOW
+                </td>
+            </tr>
+            
+            </table>
+
+        </body>
+        </html>
+        
