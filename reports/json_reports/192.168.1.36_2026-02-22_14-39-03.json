@@ -1,0 +1,32 @@
+{
+    "scan_type": "tcp",
+    "targets_scanned": 1,
+    "results": [
+        {
+            "target": "192.168.1.36",
+            "open_ports": [
+                {
+                    "port": 139,
+                    "service": "netbios-ssn",
+                    "banner": "\u0000\u0000\u0001",
+                    "severity": "low"
+                },
+                {
+                    "port": 135,
+                    "service": "epmap",
+                    "banner": null,
+                    "severity": "low"
+                },
+                {
+                    "port": 445,
+                    "service": "microsoft-ds",
+                    "banner": null,
+                    "severity": "high"
+                }
+            ]
+        }
+    ],
+    "start_port": 1,
+    "end_port": 600,
+    "scan_time": 6.13
+}

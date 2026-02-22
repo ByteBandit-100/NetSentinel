@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from config import REPORT_BASE_DIR
 
@@ -11,8 +12,10 @@ class HTMLExporter:
         os.makedirs(html_dir, exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = f"{target}_{timestamp}.html"
+        safe_target = re.sub(r'[^\w\.-]', '_', target)
+        filename = f"{safe_target}_{timestamp}.html"
         filepath = os.path.join(html_dir, filename)
+
 
         html_content = HTMLExporter.generate_html(data)
 
@@ -26,25 +29,38 @@ class HTMLExporter:
 
         rows = ""
 
-        for port in data["open_ports"]:
-            severity = port.get("severity", "low")
+        for host in data["results"]:
+            target = host["target"]
+            ports = host["open_ports"]
 
-            color = {
-                "high": "#ff4d4d",
-                "medium": "#ffa500",
-                "low": "#4CAF50"
-            }.get(severity, "#4CAF50")
-
+            # Host Header Row
             rows += f"""
-            <tr>
-                <td>{port['port']}</td>
-                <td>{port.get('service', 'unknown')}</td>
-                <td>{port.get('banner', 'N/A')}</td>
-                <td style="color:{color}; font-weight:bold;">
-                    {severity.upper()}
+            <tr style="background-color:#222;">
+                <td colspan="4" style="font-weight:bold; color:#00bfff;">
+                    Host: {target}
                 </td>
             </tr>
             """
+
+            for port in ports:
+                severity = port.get("severity", "low")
+
+                color = {
+                    "high": "#ff4d4d",
+                    "medium": "#ffa500",
+                    "low": "#4CAF50"
+                }.get(severity, "#4CAF50")
+
+                rows += f"""
+                <tr>
+                    <td>{port['port']}</td>
+                    <td>{port.get('service', 'unknown')}</td>
+                    <td>{port.get('banner', 'N/A')}</td>
+                    <td style="color:{color}; font-weight:bold;">
+                        {severity.upper()}
+                    </td>
+                </tr>
+                """
 
         return f"""
         <html>
@@ -73,14 +89,14 @@ class HTMLExporter:
         </head>
         <body>
 
-            <h1>NetSentinel Scan Report</h1>
+            <h1>NetSentinel Network Scan Report</h1>
 
-            <h3>Target: {data['target']}</h3>
+            <p>Scan Type: {data['scan_type']}</p>
             <p>Port Range: {data['start_port']} - {data['end_port']}</p>
-            <p>Total Scanned: {data['total_scanned']}</p>
+            <p>Targets Scanned: {data['targets_scanned']}</p>
             <p>Time Taken: {data['scan_time']} seconds</p>
 
-            <h2>Open Ports</h2>
+            <h2>Results</h2>
 
             <table>
                 <tr>

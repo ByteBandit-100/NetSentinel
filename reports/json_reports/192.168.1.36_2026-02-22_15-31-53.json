@@ -1,0 +1,49 @@
+{
+    "scan_type": "tcp",
+    "targets_scanned": 1,
+    "results": [
+        {
+            "target": "192.168.1.36",
+            "open_ports": [
+                {
+                    "port": 139,
+                    "service": "netbios-ssn",
+                    "banner": "\u0000\u0000\u0001",
+                    "severity": "low",
+                    "status": "open"
+                },
+                {
+                    "port": 135,
+                    "service": "epmap",
+                    "banner": null,
+                    "severity": "low",
+                    "status": "open"
+                },
+                {
+                    "port": 445,
+                    "service": "microsoft-ds",
+                    "banner": null,
+                    "severity": "high",
+                    "status": "open"
+                },
+                {
+                    "port": 902,
+                    "service": "unknown",
+                    "banner": null,
+                    "severity": "low",
+                    "status": "open"
+                },
+                {
+                    "port": 912,
+                    "service": "unknown",
+                    "banner": "220 VMware Authentication Daemon Version 1.0, ServerDaemonProtocol:SOAP, MKSDisplayProtocol:VNC , , ,",
+                    "severity": "low",
+                    "status": "open"
+                }
+            ]
+        }
+    ],
+    "start_port": 1,
+    "end_port": 1000,
+    "scan_time": 10.72
+}

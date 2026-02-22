@@ -11,7 +11,8 @@ class JSONExporter:
         os.makedirs(json_dir, exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = f"{target}_{timestamp}.json"
+        safe_target = target.replace("/", "_")
+        filename = f"{safe_target}_{timestamp}.json"
         filepath = os.path.join(json_dir, filename)
 
 

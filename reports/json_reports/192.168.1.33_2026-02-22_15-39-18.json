@@ -1,0 +1,13 @@
+{
+    "scan_type": "tcp",
+    "targets_scanned": 1,
+    "results": [
+        {
+            "target": "192.168.1.33",
+            "open_ports": []
+        }
+    ],
+    "start_port": 1,
+    "end_port": 1024,
+    "scan_time": 25.53
+}

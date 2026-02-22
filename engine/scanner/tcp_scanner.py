@@ -1,24 +1,16 @@
 import socket
-import time
-import threading
-from engine.scanner.thread_pool import ThreadPoolManager
+from colorama import Fore, Style
+from engine.scanner.base_scanner import BaseScanner
 from engine.core.logger import LoggerFactory
 from engine.utils.service_mapper import ServiceMapper
 from engine.utils.severity_classifier import SeverityClassifier
-from colorama import Fore, Style
 
-class TCPScanner:
 
-    def __init__(self, target: str, start_port: int, end_port: int, threads: int = 50):
-        self.target = target
-        self.start_port = start_port
-        self.end_port = end_port
-        self.threads = threads
+class TCPScanner(BaseScanner):
 
-        self.logger = LoggerFactory.get_logger("scanner", "scan_logs")
-        self.open_ports = []
-        self.scanned_count = 0
-        self.lock = threading.Lock()
+    def __init__(self, target, start_port, end_port, threads=50, timeout=1.0):
+        logger = LoggerFactory.get_logger("tcp_scanner", "scan_logs")
+        super().__init__(target, start_port, end_port, threads, timeout, logger)
 
     # -------------------------------------------------------
     # Vulnerability Pattern Check
@@ -43,13 +35,13 @@ class TCPScanner:
                 self.logger.warning(warning_msg)
 
     # -------------------------------------------------------
-    # Scan Single Port
+    # Scan Single TCP Port
     # -------------------------------------------------------
     def scan_port(self, port: int):
+
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.settimeout(1)
-
+                sock.settimeout(self.timeout)
                 result = sock.connect_ex((self.target, port))
 
                 if result == 0:
@@ -77,11 +69,15 @@ class TCPScanner:
                         "low": Fore.GREEN
                     }.get(severity, Fore.GREEN)
 
-                    # Thread-safe update
-                    with self.lock:
+                    # Thread-safe result update
+                    with self.result_lock:
                         print(
-                            f"{color}[OPEN] Port {port} | Service: {service} | Severity: {severity.upper()}{Style.RESET_ALL}"
+                            f"{color}[OPEN] Port {port} | "
+                            f"Service: {service} | "
+                            f"Severity: {severity.upper()}"
+                            f"{Style.RESET_ALL}"
                         )
+
                         if banner_text:
                             print(f"   └─ Banner: {banner_text[:100]}")
 
@@ -89,7 +85,8 @@ class TCPScanner:
                             "port": port,
                             "service": service,
                             "banner": banner_text,
-                            "severity": severity
+                            "severity": severity,
+                            "status": "open"
                         })
 
                     self.logger.info(f"Port {port} is OPEN")
@@ -98,44 +95,20 @@ class TCPScanner:
                     self.logger.debug(f"Port {port} is closed")
 
         except Exception as e:
-            self.logger.error(f"Error scanning port {port}: {str(e)}")
+            self.logger.error(f"Error scanning TCP port {port}: {str(e)}")
 
         finally:
-            # Thread-safe progress counter
-            with self.lock:
-                self.scanned_count += 1
-                print(f"Scanned: {self.scanned_count}", end="\r")
+            with self.progress_lock:
+                self.scanned_ports += 1
+                self._print_progress()
 
     # -------------------------------------------------------
-    # Main Scan Function
+    # Start TCP Scan
     # -------------------------------------------------------
     def scan(self):
-        print(f"\nScanning {self.target} with {self.threads} threads...\n")
-        start_time = time.time()
+        self.logger.info(
+            f"Starting TCP scan on {self.target} "
+            f"from {self.start_port} to {self.end_port}"
+        )
 
-        self.logger.info(f"Starting threaded scan on {self.target} from {self.start_port} to {self.end_port}")
-
-        # -----------------------------
-        # Use External ThreadPoolManager
-        # -----------------------------
-        pool = ThreadPoolManager(max_threads=self.threads)
-        ports = range(self.start_port, self.end_port + 1)
-        pool.run(self.scan_port, ports)
-
-        end_time = time.time()
-        duration = round(end_time - start_time, 2)
-
-        total_ports = self.end_port - self.start_port + 1
-        open_count = len(self.open_ports)
-
-        print("\n\nScan Summary")
-        print("------------")
-        print(f"Target: {self.target}")
-        print(f"Ports scanned: {total_ports}")
-        print(f"Open ports: {open_count}")
-        print(f"Time taken: {duration} seconds\n")
-
-        self.logger.info("Scan finished.")
-        self.logger.info(f"Summary: {open_count} open ports found in {duration} seconds")
-
-        return self.open_ports
+        return self._run_scan(self.scan_port)
