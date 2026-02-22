@@ -14,6 +14,15 @@ env/
 # Logs
 logs/
 
+# Ignore JSON files
+*.json
+
+# Ignore log files
+*.log
+
+# Ignore HTML files (reports, exports)
+*.html
+
 # IDE
 .vscode/
 .idea/
