@@ -1,68 +1,73 @@
-import time
 import threading
+import time
 from engine.scanner.thread_pool import ThreadPoolManager
 
 
 class BaseScanner:
 
-    def __init__(self, target, start_port, end_port, threads, timeout, logger):
+    def __init__(self, target, start_port, end_port, threads, timeout, logger, stop_event=None):
         self.target = target
         self.start_port = start_port
         self.end_port = end_port
         self.threads = threads
         self.timeout = timeout
         self.logger = logger
-        self.delay = 0
-        self.total_ports = end_port - start_port + 1
-        self.scanned_ports = 0
+
         self.open_ports = []
+        self.scanned_ports = 0
+        self.total_ports = end_port - start_port + 1
 
-        self.progress_lock = threading.Lock()
         self.result_lock = threading.Lock()
+        self.progress_lock = threading.Lock()
+        self.stop_event = stop_event or threading.Event()
+        self.delay = 0
 
-    # -----------------------------------------
-    # Progress Bar
-    # -----------------------------------------
+    # ---------------------------------------
+    # Progress Printer
+    # ---------------------------------------
     def _print_progress(self):
-        percent = self.scanned_ports / self.total_ports
-        bar_length = 30
-        filled_length = int(bar_length * percent)
+        percent = (self.scanned_ports / self.total_ports) * 100
+        print(f"\rProgress: {percent:.1f}% ({self.scanned_ports}/{self.total_ports})", end="")
 
-        bar = "█" * filled_length + "░" * (bar_length - filled_length)
+    # ---------------------------------------
+    # Safe Delay (Interrupt Friendly)
+    # ---------------------------------------
+    def _safe_delay(self):
+        if self.delay <= 0:
+            return
 
-        print(
-            f"\r[{bar}] "
-            f"{percent * 100:.0f}% "
-            f"({self.scanned_ports}/{self.total_ports}) "
-            f"| Open: {len(self.open_ports)}",
-            end=""
-        )
+        steps = int(self.delay / 0.01)
+        for _ in range(steps):
+            if self.stop_event.is_set():
+                return
+            time.sleep(0.01)
 
-    # -----------------------------------------
-    # Shared Scan Engine
-    # -----------------------------------------
+    # ---------------------------------------
+    # Core Runner
+    # ---------------------------------------
     def _run_scan(self, scan_function):
-        print(f"\nScanning {self.target} with {self.threads} threads...\n")
 
-        start_time = time.time()
-
-        pool = ThreadPoolManager(self.threads)
         ports = range(self.start_port, self.end_port + 1)
+        pool = ThreadPoolManager(self.threads, self.stop_event)
 
-        def delayed_scan(port):
-            if self.delay > 0:
-                time.sleep(self.delay)
+        def wrapped_scan(port):
+            if self.stop_event.is_set():
+                return
+
             scan_function(port)
 
-        pool.run(delayed_scan, ports)
-        duration = round(time.time() - start_time, 2)
+            if self.stop_event.is_set():
+                return
+
+            self._safe_delay()
+
+        try:
+            pool.run(wrapped_scan, ports)
+
+        except KeyboardInterrupt:
+            print("\nScan interrupted. Stopping everything...")
+            self.stop_event.set()
+            raise  # 🔥 VERY IMPORTANT
 
         print()
-        print("\nScan Summary")
-        print("---------------------------------")
-        print(f"Target: {self.target}")
-        print(f"Ports scanned: {self.scanned_ports}")
-        print(f"Open ports: {len(self.open_ports)}")
-        print(f"Time taken: {duration} seconds.")
-
         return self.open_ports

@@ -93,6 +93,8 @@ def resolve_speed_profile(speed: str, custom_threads: int):
     return threads, profile["delay"]
 
 def main():
+    import threading
+    stop_event = threading.Event()
     logger = LoggerFactory.get_logger("app", "scan_logs")
 
     print(f"{APP_NAME} v{VERSION} starting...\n")
@@ -104,27 +106,43 @@ def main():
         # -----------------------------
         # 1️⃣ Validate & Expand Targets
         # -----------------------------
+        import socket
+
         try:
             if "/" in args.target:
+                # CIDR handling
                 network = ipaddress.ip_network(args.target, strict=False)
                 targets = [str(ip) for ip in network.hosts()]
+
             else:
-                InputValidator.validate_ip(args.target)
-                targets = [args.target]
+                try:
+                    # Try direct IP validation first
+                    InputValidator.validate_ip(args.target)
+                    targets = [args.target]
+
+                except Exception:
+                    # If not IP → try DNS resolution
+                    print(f"Resolving domain: {args.target} ...")
+                    resolved_ip = socket.gethostbyname(args.target)
+                    print(f"Resolved to: {resolved_ip}")
+                    targets = [resolved_ip]
+
         except Exception:
-            raise ValueError("Invalid IP address or CIDR range.")
+            raise ValueError("Invalid IP address, domain, or CIDR range.")
 
         # -----------------------------
         # 2️⃣ Host Discovery
         # -----------------------------
-        print("\nPerforming host discovery...")
+        print("Performing host discovery...")
         alive_targets = []
 
-        for ip in targets:
-            if HostDiscovery.is_host_alive(ip):
-                print(f"[+] Host Alive: {ip}")
-                logger.info(f"Host alive: {ip}")
-                alive_targets.append(ip)
+        print("Performing fast host discovery...")
+
+        alive_targets = HostDiscovery.discover_hosts(
+            targets,
+            threads=200 if args.speed == "aggressive" else 100,
+            timeout=0.5
+        )
 
         if not alive_targets:
             print("No live hosts found.")
@@ -152,6 +170,11 @@ def main():
         # 4️⃣ Scanning Loop
         # -----------------------------
         for target in targets:
+
+            if stop_event.is_set():
+                print("\nGlobal stop detected. Exiting network scan...")
+                break
+
             print(f"\nScanning Host: {target}")
             logger.info(f"Scanning host: {target}")
             # Resolve speed profile once per host
@@ -175,7 +198,12 @@ def main():
                 )
 
             scanner.delay = delay
-            results = scanner.scan()
+            try:
+                results = scanner.scan()
+            except KeyboardInterrupt:
+                print("\nFull scan cancelled by user.")
+                global_stop = True
+                break
 
             all_results.append({
                 "target": target,
@@ -217,5 +245,10 @@ def main():
         logger.error(f"Error occurred: {str(e)}")
         print(f"[ERROR] {str(e)}")
         sys.exit(1)
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nScan cancelled by user.")
+        sys.exit(0)
