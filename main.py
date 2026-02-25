@@ -26,6 +26,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--vuln",
+        action="store_true",
+        help="Enable vulnerability detection"
+    )
+    
+    parser.add_argument(
         "--compare",
         help="Path to previous JSON report to compare with"
     )

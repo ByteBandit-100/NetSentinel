@@ -44,6 +44,10 @@ class TCPScanner(BaseScanner):
                 version = VersionDetector.detect(banner_text)
                 severity = SeverityClassifier.classify(port, banner_text)
 
+                from engine.vuln.vuln_engine import VulnerabilityEngine
+
+                vulns = VulnerabilityEngine.analyze(service, version, port, banner_text)
+
                 with self.result_lock:
                     self.open_ports.append({
                         "port": port,
@@ -51,7 +55,8 @@ class TCPScanner(BaseScanner):
                         "version": version,
                         "banner": banner_text,
                         "severity": severity,
-                        "status": "open"
+                        "status": "open",
+                        "vulnerabilities": vulns
                     })
 
         except Exception:
@@ -87,6 +92,9 @@ class TCPScanner(BaseScanner):
                     f"{version:<20}"
                     f"{port_info['severity']}"
                 )
+                if port_info.get("vulnerabilities"):
+                    for vuln in port_info["vulnerabilities"]:
+                        print(f"    ↳ {vuln['id']} | {vuln['name']} | {vuln['severity']}")
 
         print("---------------------------------------------------------")
         print(f"Scan completed in {scan_time} seconds")

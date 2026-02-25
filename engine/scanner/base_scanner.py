@@ -28,7 +28,7 @@ class BaseScanner:
     def _print_progress(self):
         percent = (self.scanned_ports / self.total_ports) * 100
         print(
-            f"\rProgress: {percent:.1f}% ({self.scanned_ports}/{self.total_ports})",
+            f"\r   |-Progress: {percent:.1f}% ({self.scanned_ports}/{self.total_ports})",
             end="",
             flush=True
         )

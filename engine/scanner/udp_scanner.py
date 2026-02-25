@@ -37,13 +37,20 @@ class UDPScanner(BaseScanner):
 
                 severity = SeverityClassifier.classify(port, banner_text)
 
+                from engine.vuln.vuln_engine import VulnerabilityEngine
+
+                version = None  # unless you detect one
+                vulns = VulnerabilityEngine.analyze(service, version, port, banner_text)
+
                 with self.result_lock:
                     self.open_ports.append({
                         "port": port,
                         "service": service,
+                        "version": version,
                         "banner": banner_text,
                         "severity": severity,
-                        "status": status
+                        "status": status,
+                        "vulnerabilities": vulns
                     })
 
         except Exception:
@@ -76,6 +83,9 @@ class UDPScanner(BaseScanner):
                   f"{port_info['status']:<15}"
                   f"{port_info['service']:<16}"
                   f"{port_info['severity']}")
+            if port_info.get("vulnerabilities"):
+                for vuln in port_info["vulnerabilities"]:
+                    print(f"    ↳ {vuln['id']} | {vuln['name']} | {vuln['severity']}")
 
         print("--------------------------------------------------")
         print(f"Scan completed in {scan_time} seconds")
