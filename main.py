@@ -134,7 +134,7 @@ def main():
         # 2️⃣ Host Discovery
         # -----------------------------
         print("\nPerforming Host Discovery...")
-        print("--------------------------------------------------")
+        print("-----------------------------------------------")
 
         alive_targets = HostDiscovery.discover_hosts(
             targets,
@@ -149,7 +149,7 @@ def main():
         for host in alive_targets:
             print(f"Host {host:<15}   →  UP")
 
-        print("--------------------------------------------------")
+        print("-----------------------------------------------")
         print(f"Total Live Hosts: {len(alive_targets)}\n")
 
         targets = alive_targets
@@ -178,7 +178,7 @@ def main():
                 print("\nGlobal stop detected. Exiting network scan...")
                 break
 
-            print(f"\nScanning Host: {target}")
+            print(f"Scanning Host: {target}")
             logger.info(f"Scanning host: {target}")
             # Resolve speed profile once per host
             threads, delay = resolve_speed_profile(args.speed, args.threads)

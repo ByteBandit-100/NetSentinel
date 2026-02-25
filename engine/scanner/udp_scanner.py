@@ -49,6 +49,13 @@ class UDPScanner(BaseScanner):
         except Exception:
             pass
 
+        finally:
+            # 🔥 THIS IS THE MISSING PART
+            if not self.stop_event.is_set():
+                with self.progress_lock:
+                    self.scanned_ports += 1
+                    self._print_progress()
+
     def scan(self):
         self.logger.info(
             f"Starting UDP scan on {self.target} "
@@ -62,12 +69,12 @@ class UDPScanner(BaseScanner):
         scan_time = round(end_time - start_time, 2)
 
         print("--------------------------------------------------")
-        print(f"{'PORT':<9}{'STATE':<8}{'SERVICE':<10}{'RISK'}")
+        print(f"{'PORT':<9}{'STATE':<8}\t{'SERVICE':<10}\t{'RISK'}")
 
         for port_info in sorted(results, key=lambda x: x["port"]):
-            print(f"{str(port_info['port'])+'/udp':<9}"
-                  f"{port_info['status'].upper():<8}"
-                  f"{port_info['service']:<10}"
+            print(f"{str(port_info['port']) + '/udp':<9}"
+                  f"{port_info['status']:<15}"
+                  f"{port_info['service']:<16}"
                   f"{port_info['severity']}")
 
         print("--------------------------------------------------")
