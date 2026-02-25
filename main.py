@@ -133,10 +133,8 @@ def main():
         # -----------------------------
         # 2️⃣ Host Discovery
         # -----------------------------
-        print("Performing host discovery...")
-        alive_targets = []
-
-        print("Performing fast host discovery...")
+        print("\nPerforming Host Discovery...")
+        print("--------------------------------------------------")
 
         alive_targets = HostDiscovery.discover_hosts(
             targets,
@@ -146,8 +144,13 @@ def main():
 
         if not alive_targets:
             print("No live hosts found.")
-            logger.warning("No live hosts detected.")
             return
+
+        for host in alive_targets:
+            print(f"Host {host:<15}   →  UP")
+
+        print("--------------------------------------------------")
+        print(f"Total Live Hosts: {len(alive_targets)}\n")
 
         targets = alive_targets
 
@@ -186,7 +189,8 @@ def main():
                     start_port=args.start,
                     end_port=args.end,
                     threads=threads,
-                    timeout=args.timeout
+                    timeout=args.timeout,
+                    stop_event = stop_event
                 )
             else:
                 scanner = UDPScanner(
@@ -194,7 +198,8 @@ def main():
                     start_port=args.start,
                     end_port=args.end,
                     threads=threads,
-                    timeout=args.timeout
+                    timeout=args.timeout,
+                    stop_event=stop_event
                 )
 
             scanner.delay = delay
@@ -202,8 +207,8 @@ def main():
                 results = scanner.scan()
             except KeyboardInterrupt:
                 print("\nFull scan cancelled by user.")
-                global_stop = True
-                break
+                stop_event.set()  # 🔥 signal all threads
+                sys.exit(0)
 
             all_results.append({
                 "target": target,

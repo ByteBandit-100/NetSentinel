@@ -46,7 +46,6 @@ class HostDiscovery:
                 for future in as_completed(futures):
                     result = future.result()
                     if result:
-                        print(f"[+] Host Alive: {result}")
                         alive_hosts.append(result)
 
             except KeyboardInterrupt:

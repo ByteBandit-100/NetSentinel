@@ -22,16 +22,20 @@ class BaseScanner:
         self.stop_event = stop_event or threading.Event()
         self.delay = 0
 
-    # ---------------------------------------
-    # Progress Printer
-    # ---------------------------------------
+    # -----------------------------
+    # LIVE PROGRESS DISPLAY
+    # -----------------------------
     def _print_progress(self):
         percent = (self.scanned_ports / self.total_ports) * 100
-        print(f"\rProgress: {percent:.1f}% ({self.scanned_ports}/{self.total_ports})", end="")
+        print(
+            f"\rProgress: {percent:.1f}% ({self.scanned_ports}/{self.total_ports})",
+            end="",
+            flush=True
+        )
 
-    # ---------------------------------------
-    # Safe Delay (Interrupt Friendly)
-    # ---------------------------------------
+    # -----------------------------
+    # Safe Delay
+    # -----------------------------
     def _safe_delay(self):
         if self.delay <= 0:
             return
@@ -42,9 +46,9 @@ class BaseScanner:
                 return
             time.sleep(0.01)
 
-    # ---------------------------------------
+    # -----------------------------
     # Core Runner
-    # ---------------------------------------
+    # -----------------------------
     def _run_scan(self, scan_function):
 
         ports = range(self.start_port, self.end_port + 1)
@@ -67,7 +71,7 @@ class BaseScanner:
         except KeyboardInterrupt:
             print("\nScan interrupted. Stopping everything...")
             self.stop_event.set()
-            raise  # 🔥 VERY IMPORTANT
+            raise
 
-        print()
+        print()  # move cursor to next line after progress
         return self.open_ports
