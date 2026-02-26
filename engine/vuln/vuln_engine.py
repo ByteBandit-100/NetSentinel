@@ -1,4 +1,8 @@
+# engine/vuln/vuln_engine.py
+
 from engine.vuln.vuln_database import VULN_DB
+from engine.vuln.rule_engine import RuleEngine
+
 
 class VulnerabilityEngine:
 
@@ -7,30 +11,35 @@ class VulnerabilityEngine:
 
         findings = []
 
-        service = (service or "").lower()
-        version = (version or "").lower()
-        banner = str(banner or "").lower()
+        for rule in VULN_DB:
 
-        for vuln in VULN_DB:
+            result = RuleEngine.evaluate(
+                rule,
+                port=port,
+                service=service,
+                version=version,
+                banner=banner
+            )
 
-            # Match by port
-            if vuln.get("port") and vuln["port"] == port:
-                findings.append(vuln)
+            if not result:
                 continue
 
-            # Match by service name
-            if vuln.get("service") and vuln["service"].lower() in service:
-                findings.append(vuln)
-                continue
+            confidence = result["confidence_score"]
 
-            # Match by version substring
-            if vuln.get("version") and vuln["version"].lower() in version:
-                findings.append(vuln)
-                continue
+            if confidence >= 80:
+                level = "CONFIRMED"
+            elif confidence >= 60:
+                level = "LIKELY"
+            else:
+                level = "POSSIBLE"
 
-            # Match by banner keyword
-            if vuln.get("keyword") and vuln["keyword"].lower() in banner:
-                findings.append(vuln)
-                continue
+            findings.append({
+                "id": rule["id"],
+                "name": rule["name"],
+                "severity": rule["severity"],
+                "confidence": level,
+                "confidence_score": confidence,
+                "description": rule.get("description", "")
+            })
 
         return findings

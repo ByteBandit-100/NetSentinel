@@ -85,7 +85,12 @@ class UDPScanner(BaseScanner):
                   f"{port_info['severity']}")
             if port_info.get("vulnerabilities"):
                 for vuln in port_info["vulnerabilities"]:
-                    print(f"    ↳ {vuln['id']} | {vuln['name']} | {vuln['severity']}")
+                    print(
+                        f"    ↳ {vuln['id']} | "
+                        f"{vuln['name']} | "
+                        f"{vuln['severity']} | "
+                        f"{vuln['confidence']} ({vuln['confidence_score']}%)"
+                    )
 
         print("--------------------------------------------------")
         print(f"Scan completed in {scan_time} seconds")
